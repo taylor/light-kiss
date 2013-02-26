@@ -15,8 +15,8 @@ If no argument is given to mybrightness it will show the current brightness
 number.
 
 If symlinks are created:
- * {{{ln -s mybrightness dimmer}}}
- * {{{ln -s mybrightness brighten}}}
+ * ```ln -s mybrightness dimmer```
+ * ```ln -s mybrightness brighten```
 
 Then those can be called directly to brighten or dim the display
 respectively.
