@@ -7,12 +7,22 @@ display.
 
 Laptops with Intel video cards (could easily add support for others that except the same acpi controls)
 
-External monitors supported by acdcontrol
+External monitors supported by acdcontrol.  See External Display section
 
 ## Features
 
-Increment or decrement brightness by 10%
-Jump to minimum or maximum brightness
-Turn display off
-Set to specific brightness value
-Catches values that are out of range and sets to min or max
+Current:
+ * Increment or decrement brightness by 10%
+ * Jump to minimum or maximum brightness
+ * Turn display off
+ * Set to specific brightness value
+ * Catches values that are out of range and sets to min or max
+
+Future:
+ * support other video cards
+ * 50% brightness
+ * actually support the acdcontrol
+
+## External Display
+
+Not currently enabled.  See the brighten-acd script which does work... usually.
