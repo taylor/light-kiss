@@ -1,0 +1,35 @@
+#!/bin/bash
+
+me=$(basename $0)
+
+
+hiddev=""
+
+for hid in /dev/usb/hiddev* ; do
+  acdcontrol --detect $hid |grep -q SUPPORTED
+  if [ "$?" = 0 ] ; then
+    hiddev=$hid
+  fi
+done
+
+if [ -z "$hiddev" ] ; then
+  echo "no dev found"
+  exit 0
+fi
+
+
+amount="$1"
+
+if [ -z "$amount" ] ; then
+  amount=150
+fi
+
+case $me in
+brighten)
+  acdcontrol $hiddev -- +$amount
+  ;;
+*)
+  acdcontrol $hiddev -- -$amount
+  ;;
+esac
+
