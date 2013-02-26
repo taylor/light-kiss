@@ -9,6 +9,27 @@ Intel tested.  Probably anything showing up under */sys/class/backlight/*
 
 External monitors supported by acdcontrol.  See External Display section
 
+## Usage
+
+If no argument is given to mybrightness it will show the current brightness
+number.
+
+If symlinks are created:
+ * {{{ln -s mybrightness dimmer}}}
+ * {{{ln -s mybrightness brighten}}}
+
+Then those can be called directly to brighten or dim the display
+respectively.
+
+Alternatively use the following commands:
+ * up -- increment brightness by 10%
+ * down -- decrement brightness by 10%
+ * max -- set to maximum brightness supported by device
+ * max -- set to minimum default brightness specifed in app
+ * set N -- sets brightness to exact number (if valid)
+ * off -- turns display off
+ * help -- shows the options
+
 ## Features
 
 Current:
