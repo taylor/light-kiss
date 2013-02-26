@@ -1,9 +1,19 @@
 #!/bin/bash
 
-me=$(basename $0)
 
+##############################################################################
+# USER CONFIGURATION OPTIONS
+# the intel video card and/or thinkpad display goes off if this is <= 30
+DEFAULT_MIN_BRIGHTNESS=35
+
+# apple support curently not working
+USE_APPLE_EXT_DISPLAY="N"
+##############################################################################
+
+me=$(basename $0)
 if [ "$1" = "-v" -o "$1" = "--verbose" ] ; then
   VERBOSE=1
+  shift
 else
   VERBOSE=0
 fi
@@ -14,20 +24,46 @@ function show_help() {
   echo "$me <up|down|max|min|set <N>|off>"
 }
 
-## laptop with intel video card
-myminbrightness=35
-brightness_ctl_file="/sys/class/backlight/intel_backlight/brightness"
-actualbrightness_ctl_file="/sys/class/backlight/intel_backlight/actual_brightness"
-maxbrightness_ctl_file="/sys/class/backlight/intel_backlight/max_brightness"
 
+function find_defaultdisplay() {
+  # TODO: determine this
+  echo ""
+}
 
+function find_backlightctldir() {
+  find /sys/class/backlight -maxdepth 1 -type l -name \*backlight\* | tail -n 1
+}
+
+## Laptop display settings
+backlightctldir=$(find_backlightctldir)
+
+if [ -z "$backlightctldir" ] ; then
+  echo "Could not find backlight control directory under /sys/class/backlight!"
+  exit 1
+fi
+
+brightness_ctl_file="$backlightctldir/brightness"
+actualbrightness_ctl_file="$backlightctldir/actual_brightness"
+maxbrightness_ctl_file="$backlightctldir/max_brightness"
+
+# find_defaultdisplay
+
+# TODO: don't do this if we are on an external display
+currentbrightness="$(cat ${actualbrightness_ctl_file})"
+maxbrightness="$(cat ${maxbrightness_ctl_file})"
+bright10percent=$((${maxbrightness}/10))
+
+if [ ! -w "${brightness_ctl_file}" ] ; then
+  echo "No access to $brightness_ctl_file"
+  echo "Please run: sudo chmod 664 ${brightness_ctl_file}"
+  exit 1
+fi
 
 # TODO: make it support multiple thingies...
 ## for Mac monitor
 # sudo acdcontrol -d  /dev/usb/hiddev*
 # acdcontrol ....
 
-USE_APPLE_EXT_DISPLAY="N"
 
 hiddev=""
 
@@ -74,16 +110,6 @@ function change_brightness() {
   fi
 }
 
-
-currentbrightness="$(cat ${actualbrightness_ctl_file})"
-maxbrightness="$(cat ${maxbrightness_ctl_file})"
-bright10percent=$((${maxbrightness}/10))
-
-if [ ! -w "${brightness_ctl_file}" ] ; then
-  echo "No access to $brightness_ctl_file"
-  echo "Please run: sudo chmod 664 ${brightness_ctl_file}"
-  exit 1
-fi
 
 
 case $me in
@@ -152,7 +178,7 @@ elif [ "$cmd" = "down" ] ; then
 elif [ "$cmd" = "max" ] ; then
   newbrightness="$maxbrightness"
 elif [ "$cmd" = "min" ] ; then
-  newbrightness="$myminbrightness"
+  newbrightness="$DEFAULT_MIN_BRIGHTNESS"
 elif [ "$cmd" = "set" ] ; then
   newbrightness="$cmdarg"
 elif [ "$cmd" = "off" ] ; then
@@ -171,9 +197,9 @@ fi
 if (( $newbrightness > $maxbrightness )) ; then
   _vecho "too high, nb: $newbrightness, cb: $currentbrightness, mb: $maxbrightness"
   newbrightness=$maxbrightness
-elif (( $newbrightness < $myminbrightness )) ; then
+elif (( $newbrightness < $DEFAULT_MIN_BRIGHTNESS )) ; then
   _vecho "too low"
-  newbrightness=$myminbrightness
+  newbrightness=$DEFAULT_MIN_BRIGHTNESS
 fi
 
 _vecho "Changing brightness from $currentbrightness to $newbrightness"
