@@ -1,0 +1,18 @@
+# Taylor's laptop brightness control
+
+This tries to give cli control over the brightness of the laptop and external
+display.
+
+## Systems supported
+
+Laptops with Intel video cards (could easily add support for others that except the same acpi controls)
+
+External monitors supported by acdcontrol
+
+## Features
+
+Increment or decrement brightness by 10%
+Jump to minimum or maximum brightness
+Turn display off
+Set to specific brightness value
+Catches values that are out of range and sets to min or max
