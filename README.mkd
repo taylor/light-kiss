@@ -5,7 +5,7 @@ display.
 
 ## Systems supported
 
-Laptops with Intel video cards (could easily add support for others that except the same acpi controls)
+Intel tested.  Probably anything showing up under */sys/class/backlight/*
 
 External monitors supported by acdcontrol.  See External Display section
 
