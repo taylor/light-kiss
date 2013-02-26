@@ -1,0 +1,181 @@
+#!/bin/bash
+
+me=$(basename $0)
+
+if [ "$1" = "-v" -o "$1" = "--verbose" ] ; then
+  VERBOSE=1
+else
+  VERBOSE=0
+fi
+
+function _vecho() { if [ "${VERBOSE}" = 1 ] ; then echo $* ; fi ; }
+
+function show_help() {
+  echo "$me <up|down|max|min|set <N>|off>"
+}
+
+## laptop with intel video card
+myminbrightness=35
+brightness_ctl_file="/sys/class/backlight/intel_backlight/brightness"
+actualbrightness_ctl_file="/sys/class/backlight/intel_backlight/actual_brightness"
+maxbrightness_ctl_file="/sys/class/backlight/intel_backlight/max_brightness"
+
+
+
+# TODO: make it support multiple thingies...
+## for Mac monitor
+# sudo acdcontrol -d  /dev/usb/hiddev*
+# acdcontrol ....
+
+USE_APPLE_EXT_DISPLAY="N"
+
+hiddev=""
+
+function find_hiddev() {
+  for hid in /dev/usb/hiddev* ; do
+    acdcontrol --detect $hid |grep -q SUPPORTED
+    if [ "$?" = 0 ] ; then
+      hiddev=$hid
+    fi
+  done
+}
+
+function change_brightness_acd() {
+  if [ "$USE_APPLE_EXT_DISPLAY" = "Y" ] ; then
+    find_hiddev
+
+    if [ -z "$hiddev" ] ; then
+      echo "no dev found"
+      exit 0
+    fi
+
+    amount="$1"
+
+    if [ -z "$amount" ] ; then
+      amount=150
+    fi
+
+    # brigthen
+    #acdcontrol $hiddev -- +$amount
+    # dim
+    #acdcontrol $hiddev -- -$amount
+  else
+    echo "we should not be in apple land"
+  fi
+}
+
+function change_brightness() {
+  if [ "$USE_APPLE_EXT_DISPLAY" = "Y" ] ; then
+    _vecho "acd"
+    change_brightness_acd $1
+  else
+    _vecho "echo $1 > $brightness_ctl_file"
+    echo $1 > $brightness_ctl_file
+  fi
+}
+
+
+currentbrightness="$(cat ${actualbrightness_ctl_file})"
+maxbrightness="$(cat ${maxbrightness_ctl_file})"
+bright10percent=$((${maxbrightness}/10))
+
+if [ ! -w "${brightness_ctl_file}" ] ; then
+  echo "No access to $brightness_ctl_file"
+  echo "Please run: sudo chmod 664 ${brightness_ctl_file}"
+  exit 1
+fi
+
+
+case $me in
+brighten|brighter)
+  cmd="up"
+  ;;
+dimmer|dimmit)
+  cmd="down"
+  ;;
+maxbrightness)
+  cmd="max"
+  ;;
+maxdimmness)
+  cmd="min"
+  ;;
+setbrightness)
+  if [[ "$1" == +([0-9]*) ]] ; then
+    cmd="set"
+    cmdarg="$1"
+    shift
+  else
+    show_help
+    exit 1
+  fi
+  ;;
+*)
+  cmd="show"
+  ;;
+esac
+
+# TODO: merge these two cases statements maybe...
+case $1 in
+up|more|brighter)
+  cmd="up"
+  ;;
+down|dimmer|dimmit)
+  cmd="down"
+  ;;
+max)
+  cmd="max"
+  ;;
+min)
+  cmd="min"
+  ;;
+help|-h)
+  cmd="help"
+  ;;
+off)
+  cmd="off"
+  ;;
+*)
+  if [[ "$1" == +([0-9]*) ]] ; then
+    cmd="set"
+    cmdarg="$1"
+    shift
+  elif [ -z "$cmd"  ] ; then
+    cmd="show"
+  fi
+  ;;
+esac
+
+if [ "$cmd" = "up" ] ; then
+  newbrightness="$(($currentbrightness+$bright10percent))"
+elif [ "$cmd" = "down" ] ; then
+  newbrightness="$(($currentbrightness-$bright10percent))"
+elif [ "$cmd" = "max" ] ; then
+  newbrightness="$maxbrightness"
+elif [ "$cmd" = "min" ] ; then
+  newbrightness="$myminbrightness"
+elif [ "$cmd" = "set" ] ; then
+  newbrightness="$cmdarg"
+elif [ "$cmd" = "off" ] ; then
+  #newbrightness="0"
+  sleep 1
+  xset dpms force off
+  exit 0
+elif [ "$cmd" = "help" ] ; then
+  show_help
+  exit 0
+else
+  echo "current brightness: $currentbrightness"
+  exit 0
+fi
+
+if (( $newbrightness > $maxbrightness )) ; then
+  _vecho "too high, nb: $newbrightness, cb: $currentbrightness, mb: $maxbrightness"
+  newbrightness=$maxbrightness
+elif (( $newbrightness < $myminbrightness )) ; then
+  _vecho "too low"
+  newbrightness=$myminbrightness
+fi
+
+_vecho "Changing brightness from $currentbrightness to $newbrightness"
+
+change_brightness $newbrightness
