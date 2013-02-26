@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# TODO: make it support multiple thingies...
+## for Mac monitor
+# sudo acdcontrol -d  /dev/usb/hiddev*
+# acdcontrol ....
+
+## laptop screen35
+myminbrightness=30
+brightness_ctl_file="/sys/class/backlight/intel_backlight/brightness"
+actualbrightness_ctl_file="/sys/class/backlight/intel_backlight/actual_brightness"
+maxbrightness_ctl_file="/sys/class/backlight/intel_backlight/max_brightness"
+
+function change_brightness() {
+  echo $1 > $brightness_ctl_file
+}
+
+currentbrightness="$(cat ${actualbrightness_ctl_file})"
+maxbrightness="$(cat ${maxbrightness_ctl_file})"
+bright10percent=$((${maxbrightness}/10))
+
+if [ ! -w "${brightness_ctl_file}" ] ; then
+  echo "No access to $brightness_ctl_file"
+  echo "Please run: sudo chmod 664 ${brightness_ctl_file}"
+  exit 1
+fi
+
+if [ "$1" = "up" ] ; then
+  newbrightness="$(($currentbrightness+$bright10percent))"
+elif [ "$1" = "down" ] ; then
+  newbrightness="$(($currentbrightness-$bright10percent))"
+elif [ "$1" = "max" ] ; then
+  newbrightness="$maxbrightness"
+elif [ "$1" = "min" ] ; then
+  newbrightness="$myminbrightness"
+elif [ "$1" = "off" ] ; then
+  #newbrightness="0"
+  sleep 1
+  xset dpms force off
+  exit 0
+elif [ "$1" = "help" -o "$1" = "-h" ] ; then
+  echo "$me <up|down>"
+  exit 0
+else
+  echo "current brightness: $currentbrightness"
+  exit 0
+fi
+
+if (( $newbrightness > $maxbrightness )) ; then
+  echo "too high, nb: $newbrightness, cb: $currentbrightness, mb: $maxbrightness"
+  newbrightness=$maxbrightness
+elif (( $newbrightness < $myminbrightness )) ; then
+  echo "too low"
+  newbrightness=$myminbrightness
+fi
+
+echo "Changing brightness from $currentbrightness to $newbrightness"
+
+change_brightness $newbrightness
