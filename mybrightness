@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#
 
 ##############################################################################
 # USER CONFIGURATION OPTIONS
@@ -7,8 +7,10 @@
 DEFAULT_MIN_BRIGHTNESS=35
 
 # apple support curently not working
-USE_APPLE_EXT_DISPLAY="N"
+USE_APPLE_EXT_DISPLAY="${USE_APPLE_EXT_DISPLAY:-N}"
 ##############################################################################
+# Reference
+# see xbacklight as alternative
 
 me=$(basename $0)
 if [ "$1" = "-v" -o "$1" = "--verbose" ] ; then
@@ -53,6 +55,7 @@ currentbrightness="$(cat ${actualbrightness_ctl_file})"
 maxbrightness="$(cat ${maxbrightness_ctl_file})"
 bright10percent=$((${maxbrightness}/10))
 
+
 if [ ! -w "${brightness_ctl_file}" ] ; then
   echo "No access to $brightness_ctl_file"
   echo "Please run: sudo chmod 664 ${brightness_ctl_file}"
@@ -68,12 +71,17 @@ fi
 hiddev=""
 
 function find_hiddev() {
-  for hid in /dev/usb/hiddev* ; do
-    acdcontrol --detect $hid |grep -q SUPPORTED
-    if [ "$?" = 0 ] ; then
-      hiddev=$hid
-    fi
-  done
+  if [ -n "$(which acdcontrol)" ] ; then
+    for hid in /dev/usb/hiddev* ; do
+      acdcontrol --detect $hid |grep -q SUPPORTED
+      if [ "$?" = 0 ] ; then
+        hiddev=$hid
+      fi
+    done
+  else
+    echo "Install acdcontrol"
+    exit 1
+  fi
 }
 
 function change_brightness_acd() {
@@ -91,10 +99,20 @@ function change_brightness_acd() {
       amount=150
     fi
 
-    # brigthen
-    #acdcontrol $hiddev -- +$amount
-    # dim
-    #acdcontrol $hiddev -- -$amount
+    cmd="$2"
+
+    case $cmd in
+      up)
+        PREFIX="+"
+        ;;
+      down)
+        PREFIX="-"
+        ;;
+      *)
+        PREFIX=""
+    esac
+
+    acdcontrol -s $hiddev -- ${PREFIX}${amount}
   else
     echo "we should not be in apple land"
   fi
@@ -103,14 +121,14 @@ function change_brightness_acd() {
 function change_brightness() {
   if [ "$USE_APPLE_EXT_DISPLAY" = "Y" ] ; then
     _vecho "acd"
-    change_brightness_acd $1
+    change_brightness_acd $1 $2
   else
     _vecho "echo $1 > $brightness_ctl_file"
     echo $1 > $brightness_ctl_file
   fi
 }
 
-
+### Command parsing etc
 
 case $me in
 brighten|brighter)
@@ -139,6 +157,20 @@ setbrightness)
   cmd="show"
   ;;
 esac
+
+case $1 in
+  -appleext|-extapple|-ae|-ea)
+    USE_APPLE_EXT_DISPLAY=Y
+    shift
+    ;;
+esac
+
+
+if [ "$USE_APPLE_EXT_DISPLAY" = "Y" ] ; then
+  DEFAULT_MIN_BRIGHTNESS=10
+  maxbrightness=1000
+  minbrightness=10
+fi
 
 # TODO: merge these two cases statements maybe...
 case $1 in
@@ -204,4 +236,4 @@ fi
 
 _vecho "Changing brightness from $currentbrightness to $newbrightness"
 
-change_brightness $newbrightness
+change_brightness $newbrightness $cmd
