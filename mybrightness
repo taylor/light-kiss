@@ -20,6 +20,7 @@ else
   VERBOSE=0
 fi
 
+
 function _vecho() { if [ "${VERBOSE}" = 1 ] ; then echo $* ; fi ; }
 
 function show_help() {
@@ -56,9 +57,16 @@ maxbrightness="$(cat ${maxbrightness_ctl_file})"
 bright10percent=$((${maxbrightness}/10))
 
 
+
+if [ "$1" = "-fixperms" ] ; then
+  sudo chown :power ${brightness_ctl_file}
+  sudo chmod 664 ${brightness_ctl_file}
+  exit 0
+fi
+
 if [ ! -w "${brightness_ctl_file}" ] ; then
   echo "No access to $brightness_ctl_file"
-  echo "Please run: sudo chmod 664 ${brightness_ctl_file}"
+  echo -e "Please run:\n\tsudo chown :power ${brightness_ctl_file} \n\tsudo chmod 664 ${brightness_ctl_file}"
   exit 1
 fi
 
